@@ -1,0 +1,181 @@
+--best attacker
+Create type out1 as(
+player_id integer,
+player_position varchar(2),
+goal_assist integer
+);
+Create or Replace Function Best_Attacker()
+ Returns out1 AS $$
+Declare
+	r record;
+	x out1;
+	z out1;
+	y plays_on%rowtype;
+	sum integer:=0;
+	sum1 integer:=0;
+Begin
+	for r in select* from((Select ASSISTED_BY,Count(*) as TotalAssist from Goals
+							where assisted_by is not null  group by ASSISTED_BY) as r1
+							full outer join
+						   (Select SCORED_BY,Count(*) as TotalGoals from Goals 
+							group by SCORED_BY) as r2
+							on r1.ASSISTED_BY = r2.SCORED_BY
+							)
+	LOOP
+		sum1 :=0;
+		if r.scored_by is NULL then
+			sum1 := r.totalassist;
+			x.player_id = r.assisted_by;
+		end if;
+		if r.assisted_by is NULL then
+			sum1 := r.totalgoals;
+			x.player_id = r.scored_by;
+		end if;
+		if r.scored_by is NOT NULL then
+			if r.assisted_by is NOT NULL then
+				sum1:= (r.totalassist) + (r.totalgoals);
+				x.player_id = r.scored_by;
+			end if;
+		end if;
+		x.goal_assist = sum1;
+		for y in Select* from plays_on
+		Loop
+			if(x.player_id = y.player_id) then
+				if(y.pid = 'LW') then
+					if(x.goal_assist > sum) then
+						sum = x.goal_assist;
+						x.player_position = y.pid;
+						z = x;
+					end if;
+				end if;
+				if(y.pid = 'RW') then
+					if(x.goal_assist > sum) then
+						sum = x.goal_assist;
+						x.player_position = y.pid;
+						z = x;
+					end if;
+				end if;
+				if(y.pid = 'CF') then
+					if(x.goal_assist > sum) then
+						sum = x.goal_assist;
+						x.player_position = y.pid;
+						z = x;
+					end if;
+				end if;
+				if(y.pid = 'SS') then
+					if(x.goal_assist > sum) then
+						sum = x.goal_assist;
+						x.player_position = y.pid;
+						z = x;
+					end if;
+				end if;
+			end if;
+		end loop;
+	end loop;
+	Return z; 
+end $$ LANGUAGE plpgsql;
+select* from BEST_Attacker();
+
+
+
+
+
+
+
+
+
+--golden boot
+Create type out2 as(
+Player_id integer,
+Total_Goals integer
+);
+Create or Replace Function Golden_Boot()
+ Returns setof out2 AS $$
+Declare
+	r record;
+	v out2;
+Begin
+	for r in Select* from(Select SCORED_BY,Count(*) as TotalGoals from Goals 
+							group by SCORED_BY order by TotalGoals Desc) as r1
+		Loop
+			v.player_id = r.SCORED_BY;
+			v.Total_Goals = r.TotalGoals;
+			return next v;
+		end loop;
+	Return; 
+end $$ LANGUAGE plpgsql;
+Select* from Golden_Boot(); 
+
+
+
+
+
+
+--most valuable player
+Create or Replace Function Most_Valuable_Player()
+ Returns record AS $$
+Declare
+	r record;
+	x record;
+	sum integer:=0;
+	sum1 integer:=0;
+Begin
+	for r in select* from((Select ASSISTED_BY,Count(*) as TotalAssist from Goals
+							where assisted_by is not null  group by ASSISTED_BY) as r1
+							full outer join
+						   (Select SCORED_BY,Count(*) as TotalGoals from Goals 
+							group by SCORED_BY) as r2
+							on r1.ASSISTED_BY = r2.SCORED_BY
+							)
+	LOOP
+		sum1 :=0;
+		if r.scored_by is NULL then
+			sum1 := r.totalassist*2;
+		end if;
+		if r.assisted_by is NULL then
+			sum1 := r.totalgoals*4;
+		end if;
+		if r.scored_by is NOT NULL then
+			if r.assisted_by is NOT NULL then
+				sum1:= (r.totalassist*2) + (r.totalgoals*4);
+			end if;
+		end if;
+		if(sum1>sum) then
+			x = r;
+			sum = sum1;
+		end if;
+	end loop;
+	x.scored_by = x.totalgoals;
+	x.totalgoals = sum;
+	Return x; 
+end $$ LANGUAGE plpgsql;
+Select* from Most_Valuable_Player() AS foo(player_id int,totalassist bigint,totalgoals int,points bigint); 
+
+
+
+
+
+
+--point table
+Create type out3 as(
+position integer,
+team_name varchar(50),
+points integer
+);
+Create or Replace Function Point_Table()
+ Returns setof out3 AS $$
+Declare
+	t team%rowtype;
+	x integer := 0;
+	rec out3;
+Begin
+	for t in Select* from team order by points DESC
+		Loop
+		    x := x+1;
+			rec.position = x;
+			rec.team_name = team.team_name;
+			rec.points = team.points;
+			return next rec;
+		end loop;
+	return;
+end $$ LANGUAGE plpgsql;
