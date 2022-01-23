@@ -9,3 +9,8 @@ insert_DLLScript.txt contains experimental data for the given database.<br />
 
 # ER Diagram
 ![alt text](https://github.com/darshankapadiya19/FootballLeagueSchema/blob/main/UltimateERD.png)
+
+Functional Dependancies in FDs.docx file.<br />
+Experimental data in '#insert_DDLscript.txt' file.<br/>
+Stored Procedures are in 'Stored procedure.txt' file.<br />
+triggers in 'triggers.txt' file. <br />
